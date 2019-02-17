@@ -6,6 +6,6 @@
 class FoodPixelIdentifier
 {
   public:
-    bool GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &pixel);
+    bool GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &pixel, cv::Mat *mask = NULL);
 };
 

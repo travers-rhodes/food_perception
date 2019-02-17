@@ -3,7 +3,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
-bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &pixel)
+bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &pixel, cv::Mat *mask)
 {
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
   //cv::imshow( "Display window", image );     
@@ -57,19 +57,25 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
   cv::reduce(dist_noTomato, min_dist_noTomato, 1, cv::REDUCE_MIN);
   
 
-  cv::Mat binary_location;
-  cv::compare(min_dist_tomato, min_dist_noTomato, binary_location, cv::CMP_LE);
-  binary_location = binary_location.reshape(1,scaled_size_x);
+  cv::Mat binary_image;
+  cv::compare(min_dist_tomato, min_dist_noTomato, binary_image, cv::CMP_LE);
+  binary_image = binary_image.reshape(1,scaled_size_x);
   
-  cv::Mat binary_location_unscaled; 
+  cv::Mat binary_image_unscaled; 
   if (resized) {
-    cv::resize(binary_location, binary_location_unscaled, cv::Size(image.cols,image.rows),0,0);
+    cv::resize(binary_image, binary_image_unscaled, cv::Size(image.cols,image.rows),0,0);
   } else {
-    binary_location_unscaled = binary_location;
+    binary_image_unscaled = binary_image;
+  }
+
+  // apply the mask to the binary "relevant pixels" image 
+  if (mask)
+  {
+    binary_image_unscaled = mask->mul(binary_image_unscaled);
   }
 
   
-  cv::Moments moments = cv::moments(binary_location_unscaled, true);
+  cv::Moments moments = cv::moments(binary_image_unscaled, true);
   int x_center = moments.m10/moments.m00;
   int y_center = moments.m01/moments.m00;
   std::cout << "x_center: " << x_center << "; y_center: " << y_center << "; count: " << moments.m00 << "\n";
@@ -82,9 +88,9 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
   
   pixel.x = x_center;
   pixel.y = y_center;
-  //cv::circle(binary_location_unscaled,pixel,10,cv::Scalar( 0, 0, 255 ));
+  //cv::circle(binary_image_unscaled,pixel,10,cv::Scalar( 0, 0, 255 ));
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  //cv::imshow( "Display window", binary_location_unscaled);     
+  //cv::imshow( "Display window", binary_image_unscaled);     
   //cv::waitKey(0);
   return true;
 }

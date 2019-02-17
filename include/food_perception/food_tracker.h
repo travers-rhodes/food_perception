@@ -7,6 +7,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <memory>
+#include <vector>
 
 class FoodTracker
 {
@@ -20,9 +21,10 @@ class FoodTracker
     std::shared_ptr<FoodPixelIdentifier> pix_identifier_;
     std::string camera_frame_;
     std::string plane_frame_;
+    std::vector<geometry_msgs::Point> *table_polygon_of_interest_;
     bool active_ = false;
   public:
-    FoodTracker(std::string image_topic, std::string plane_frame);
+    FoodTracker(std::string image_topic, std::string plane_frame, std::vector<geometry_msgs::Point> *table_polygon_of_interest = NULL);
     void StartTracking();
     void imageCb(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
 };

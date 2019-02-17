@@ -57,3 +57,21 @@ geometry_msgs::PointStamped PixelProjector::PixelProjectedOnXYPlane(const cv::Po
 
   return stamped_point;
 }
+
+cv::Point2d PixelProjector::PointStampedProjectedToPixel(const geometry_msgs::PointStamped point)
+{
+  geometry_msgs::PointStamped camera_frame_point;
+  ros::Duration timeout(1.0 / 30);
+  try {
+    tf_listener_.waitForTransform(point.header.frame_id, camera_frame_, point.header.stamp, timeout);
+    tf_listener_.transformPoint(camera_frame_, point, camera_frame_point);
+  }
+  catch (tf::TransformException& ex) {
+    ROS_ERROR("[project_pixel] TF exception:\n%s", ex.what());
+    throw;
+  }
+
+  cv::Point3d cv_point3d(camera_frame_point.point.x, camera_frame_point.point.y, camera_frame_point.point.z);
+  cv::Point2d cv_point2d = cam_model_.project3dToPixel(cv_point3d);
+  return cv_point2d;
+}

@@ -13,7 +13,7 @@
 TEST(TestSuite, test_find_red)
 {
   cv::Mat image;
-  image = cv::imread("/home/traversrhodes/demo_ws/src/food_perception/test/input_data/TestImage.jpg", CV_LOAD_IMAGE_COLOR);
+  image = cv::imread("/home/traversrhodes/demo_ws/src/food_perception/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
   FoodPixelIdentifier food_identifier;
   cv::Point2d point;
   bool found = food_identifier.GetFoodPixelCenter(image, point);
