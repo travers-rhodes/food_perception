@@ -33,8 +33,8 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
   }
 
   std::string package_path = ros::package::getPath("food_perception");
-  cv::Mat tomato = cv::imread(package_path + "/test/input_data/JustTomato.jpg", CV_LOAD_IMAGE_COLOR);
-  cv::Mat noTomato = cv::imread(package_path + "/test/input_data/NoTomato.jpg", CV_LOAD_IMAGE_COLOR);
+  cv::Mat tomato = cv::imread(package_path + "/test/input_data/SmallRed.png", CV_LOAD_IMAGE_COLOR);
+  cv::Mat noTomato = cv::imread(package_path + "/test/input_data/SmallBlue.png", CV_LOAD_IMAGE_COLOR);
   //std::cout << image.cols << "," << image.rows << " I guess\n";
   //std::cout << scaledImage.cols << "," << scaledImage.rows << " I guess\n";
   //std::cout << tomato.cols << "," << tomato.rows << " I guess\n";
