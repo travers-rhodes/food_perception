@@ -131,6 +131,7 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/project_pixel.cpp
   src/${PROJECT_NAME}/food_tracker.cpp
   src/${PROJECT_NAME}/identify_food_pixel.cpp
+  src/${PROJECT_NAME}/param_parser.cpp
 )
 
 ## Add cmake target dependencies of the library

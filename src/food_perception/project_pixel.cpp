@@ -28,12 +28,33 @@ geometry_msgs::PointStamped RayProjectedOnXYPlane(tf::Vector3 &ray_camera_frame,
   return stamped_point;
 }
 
+// if the stamp is before the earliest tf transform, there's no way we can transform
+bool PixelProjector::CanProject(ros::Time stamp)
+{
+  return stamp > earliest_projectable_stamp_;
+}
+
 PixelProjector::PixelProjector(const sensor_msgs::CameraInfo &camera_info, std::string camera_frame, std::string plane_frame) : camera_frame_(camera_frame), plane_frame_(plane_frame), camera_info_(camera_info)
 {
   cam_model_.fromCameraInfo(camera_info_);
-  // wait for the tf to load up 
-  ros::Duration timeout(1.0);
-  tf_listener_.waitForTransform(plane_frame_, camera_frame_, ros::Time(0), timeout);
+  bool tf_loaded = false;
+  // wait for the tf to load up for the first time
+  while (ros::ok() && !tf_loaded)
+  {
+    ros::Duration timeout(1.0);
+    try
+    {
+      ROS_WARN("Waiting for tf to load for first time");
+      tf_listener_.waitForTransform(plane_frame_, camera_frame_, ros::Time(0), timeout);
+      // if the line above throws, the lines below won't be run
+      earliest_projectable_stamp_ = ros::Time::now(); 
+      tf_loaded = true;
+    }
+    catch (...)
+    {
+      // do nothing. Tf's waitForTransform API seems to be error-based when waiting for the first transform...
+    }
+  }
 }
 
 geometry_msgs::PointStamped PixelProjector::PixelProjectedOnXYPlane(const cv::Point2d & uv_rect, const ros::Time acquisition_time)
@@ -43,13 +64,13 @@ geometry_msgs::PointStamped PixelProjector::PixelProjectedOnXYPlane(const cv::Po
   std::string camera_frame = cam_model_.tfFrame();
   
   tf::StampedTransform transform;
-  ros::Duration timeout(1.0 / 30);
+  ros::Duration timeout(1.0 / 10);
   try {
     tf_listener_.waitForTransform(plane_frame_, camera_frame, acquisition_time, timeout);
     tf_listener_.lookupTransform(plane_frame_, camera_frame, acquisition_time, transform);
   }
   catch (tf::TransformException& ex) {
-    ROS_ERROR("[project_pixel] TF exception:\n%s", ex.what());
+    ROS_ERROR("[project_pixel] TF exception in PixelProjectedOnXYPlane:\n%s", ex.what());
     throw;
   }
 
@@ -61,13 +82,13 @@ geometry_msgs::PointStamped PixelProjector::PixelProjectedOnXYPlane(const cv::Po
 cv::Point2d PixelProjector::PointStampedProjectedToPixel(const geometry_msgs::PointStamped point)
 {
   geometry_msgs::PointStamped camera_frame_point;
-  ros::Duration timeout(1.0 / 30);
+  ros::Duration timeout(1.0 / 10);
   try {
     tf_listener_.waitForTransform(point.header.frame_id, camera_frame_, point.header.stamp, timeout);
     tf_listener_.transformPoint(camera_frame_, point, camera_frame_point);
   }
   catch (tf::TransformException& ex) {
-    ROS_ERROR("[project_pixel] TF exception:\n%s", ex.what());
+    ROS_ERROR("[project_pixel] TF exception in PointStampedProjectedToPixel:\n%s", ex.what());
     throw;
   }
 

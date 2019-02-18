@@ -2,5 +2,6 @@
   <node name="publish_food_location" pkg="food_perception" type="publish_food_location" output="screen">
     <param name="camera_topic" value="/image_raw"/>
     <param name="table_frame_id" value="base_link"/>
+    <param name="roi_polygon" value="(0,0), (0,-10), (-10,-10), (-10,0)"/>
   </node>
 </launch>

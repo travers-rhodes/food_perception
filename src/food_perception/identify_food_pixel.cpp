@@ -10,7 +10,7 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
   //cv::waitKey(0);
 
   // minimum number of pixels in order to count as a tomato
-  int min_num_pixels = 1000;
+  int min_num_pixels = 200;
   
   // avoid the computational complexity of overly large images
   int scaled_size_x = 200, scaled_size_y = 200;
@@ -78,7 +78,7 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
   cv::Moments moments = cv::moments(binary_image_unscaled, true);
   int x_center = moments.m10/moments.m00;
   int y_center = moments.m01/moments.m00;
-  std::cout << "x_center: " << x_center << "; y_center: " << y_center << "; count: " << moments.m00 << "\n";
+  //std::cout << "x_center: " << x_center << "; y_center: " << y_center << "; count: " << moments.m00 << "\n";
 
   if (moments.m00 < min_num_pixels)
   {

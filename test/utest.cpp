@@ -1,6 +1,7 @@
 // see http://wiki.ros.org/gtest
 // Bring in my package's API, which is what I'm testing
 #include "food_perception/project_pixel.h"
+#include "food_perception/param_parser.h"
 // Bring in gtest
 #include <gtest/gtest.h>
 #include <math.h>
@@ -26,6 +27,18 @@ TEST(TestSuite, test_projection)
   EXPECT_FLOAT_EQ(-20, result_point2.point.x);
   EXPECT_FLOAT_EQ(50, result_point2.point.y);
   EXPECT_FLOAT_EQ(0, result_point2.point.z);
+}
+
+TEST(TestSuite, test_param_parse)
+{
+  std::vector<geometry_msgs::Point> poly;
+  EXPECT_FALSE(ParsePolygonParam("", poly));
+  EXPECT_TRUE(ParsePolygonParam("(1, 2)", poly));
+  EXPECT_FLOAT_EQ(poly[0].x, 1);
+  EXPECT_FLOAT_EQ(poly[0].y, 2);
+  EXPECT_FLOAT_EQ(poly[0].z, 0);
+  EXPECT_FALSE(ParsePolygonParam("( 0 ,)", poly));
+  EXPECT_FALSE(ParsePolygonParam("(  ,)", poly));
 }
 
 

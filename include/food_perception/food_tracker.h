@@ -6,6 +6,7 @@
 #include <opencv/cv.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <memory>
 #include <vector>
 
@@ -16,7 +17,7 @@ class FoodTracker
     image_transport::ImageTransport it_;
     image_transport::CameraSubscriber sub_;
     tf::TransformListener tf_listener_;
-    ros::Publisher food_loc_pub_;
+    ros::Publisher food_loc_pub_, poly_pub_;
     std::shared_ptr<PixelProjector> pix_proj_;
     std::shared_ptr<FoodPixelIdentifier> pix_identifier_;
     std::string camera_frame_;

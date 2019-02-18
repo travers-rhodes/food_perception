@@ -15,9 +15,11 @@ class PixelProjector
     std::string camera_frame_;
     std::string plane_frame_;
     sensor_msgs::CameraInfo camera_info_;
+    ros::Time earliest_projectable_stamp_;
 
   public:
     PixelProjector(const sensor_msgs::CameraInfo &camera_info, std::string camera_frame, std::string plane_frame);
     geometry_msgs::PointStamped PixelProjectedOnXYPlane(const cv::Point2d & uv_rect, const ros::Time acquisition_time);
     cv::Point2d PointStampedProjectedToPixel(const geometry_msgs::PointStamped point);
+    bool CanProject(ros::Time stamp);
 };

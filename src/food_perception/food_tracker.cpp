@@ -10,6 +10,8 @@ FoodTracker::FoodTracker(std::string image_topic, std::string plane_frame, std::
   sub_ = it_.subscribeCamera(image_topic, 1, &FoodTracker::imageCb, this);
   ROS_WARN("[food_tracker] advertizing food topic");
   food_loc_pub_ = nh_.advertise<geometry_msgs::PointStamped>("food",1);
+  ROS_WARN("[food_tracker] advertizing (debugging) polygon topic");
+  poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("food_filter_polygon",1);
 }
 
 void FoodTracker::StartTracking()
@@ -17,6 +19,8 @@ void FoodTracker::StartTracking()
   active_ = true;
 }
 
+// the image_msg and info_msg should have "close" timestamps, but just in case,
+// we solely use image_msg.header.stamp when checking the time to use for tf
 void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
              const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
@@ -39,6 +43,13 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
   if (!active_)
   {
     ROS_WARN("[food_tracker] Waiting because not active yet...");
+    return;
+  }
+  
+  // give some time for the newly initialized tf listener to hear the tf transform
+  if (!pix_proj_->CanProject(image_msg->header.stamp))
+  {
+    ROS_WARN("[food_tracker] Waiting because pixel projector not yet ready to transform this timestamp...");
     return;
   }
 
@@ -65,15 +76,25 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
     stamped_vertex.header.stamp = image_msg->header.stamp;
     stamped_vertex.header.frame_id = plane_frame_;
     std::vector<cv::Point> image_filter_vertices;
+    geometry_msgs::PolygonStamped polygon_msg; 
+    polygon_msg.header.stamp = image_msg->header.stamp;
+    polygon_msg.header.frame_id = plane_frame_;
     for (int i = 0; i < table_polygon_of_interest_->size(); i++)
     {
       stamped_vertex.point = table_polygon_of_interest_->at(i);
+      //gotta convert to Point32...
+      geometry_msgs::Point32 vertex;
+      vertex.x = stamped_vertex.point.x; 
+      vertex.y = stamped_vertex.point.y; 
+      vertex.z = stamped_vertex.point.z; 
+      polygon_msg.polygon.points.push_back(vertex);
       // the following converts to integer, which I'm fine with
       cv::Point image_filter_vertex = pix_proj_->PointStampedProjectedToPixel(stamped_vertex);
       image_filter_vertices.push_back(image_filter_vertex);
       // https://stackoverflow.com/questions/43443127/opencv-how-to-create-a-mask-in-the-shape-of-a-polygon
       cv::fillConvexPoly(mask, image_filter_vertices.data(), image_filter_vertices.size(), cv::Scalar(1));
     }
+    poly_pub_.publish(polygon_msg); 
     mask_pointer = &mask;
   }
 
@@ -86,7 +107,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
 
  
   ROS_WARN("[food_tracker] Actually using tf");
-  geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, info_msg->header.stamp);
+  geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);
 
   food_loc_pub_.publish(food_loc_msg);
 }
