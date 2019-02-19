@@ -8,8 +8,12 @@ FoodTracker::FoodTracker(std::string image_topic, std::string plane_frame, std::
 {  
   ROS_WARN("[food_tracker] subscribing to camera");
   sub_ = it_.subscribeCamera(image_topic, 1, &FoodTracker::imageCb, this);
-  ROS_WARN("[food_tracker] advertizing food topic");
-  food_loc_pub_ = nh_.advertise<geometry_msgs::PointStamped>("food",1);
+  ROS_WARN("[food_tracker] advertizing food topics");
+  for (int i = 0; i < positive_img_filenames_.size(); i++)
+  {
+    ros::Publisher food_loc_pub = nh_.advertise<geometry_msgs::PointStamped>("food" + std::to_string(i),1);
+    food_loc_pubs_.push_back(food_loc_pub); 
+  }
   ROS_WARN("[food_tracker] advertizing (debugging) polygon topic");
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("food_filter_polygon",1);
 }
@@ -35,7 +39,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
   if (!pix_identifier_)
   {
     ROS_WARN("[food_tracker] Initializing pixel identifier");
-    std::shared_ptr<FoodPixelIdentifier> pix_identifier(new FoodPixelIdentifier());
+    std::shared_ptr<FoodPixelIdentifier> pix_identifier(new FoodPixelIdentifier(positive_img_filenames_, negative_img_filename_));
     pix_identifier_ = pix_identifier;
   }
 
@@ -103,18 +107,17 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
   std::vector<cv::Point2d> food_pixels;
   std::vector<std::string> negative_img_filenames;
   negative_img_filenames.push_back(negative_img_filename_);
-  if (!pix_identifier_->GetFoodPixelCenter(image, positive_img_filenames_[0], negative_img_filenames, food_pixels, mask_pointer))
+  std::vector<bool> success_vec = pix_identifier_->GetFoodPixelCenter(image, food_pixels, mask_pointer);
+  if (!success_vec[0])
   {
     ROS_WARN("[food_tracker] No tomato seen");
     return;
   }
   
   cv::Point2d food_pixel = food_pixels[0];
-
  
   ROS_WARN("[food_tracker] Actually using tf");
   geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);
-
-  food_loc_pub_.publish(food_loc_msg);
+  food_loc_pubs_[0].publish(food_loc_msg);
 }
 

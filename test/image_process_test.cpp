@@ -19,12 +19,12 @@ TEST(TestSuite, test_find_red)
   cv::Mat image = cv::imread(package_path + "/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
   std::string tomato = package_path + "/test/input_data/SmallRed.png";
   std::string noTomato = package_path + "/test/input_data/SmallBlue.png";
-  std::vector<std::string> noTomatos;
-  noTomatos.push_back(noTomato);
+  std::vector<std::string> tomatos;
+  tomatos.push_back(tomato);
   
-  FoodPixelIdentifier food_identifier;
+  FoodPixelIdentifier food_identifier(tomatos, noTomato);
   std::vector<cv::Point2d> points;
-  bool found = food_identifier.GetFoodPixelCenter(image, tomato, noTomatos, points);
+  std::vector<bool> found = food_identifier.GetFoodPixelCenter(image, points);
   //std::cout << "point" << point.x << "," << point.y << "\n";
 }
 
@@ -34,8 +34,10 @@ TEST(TestSuite, test_mask)
   cv::Mat image = cv::imread(package_path + "/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
   std::string tomato = package_path + "/test/input_data/SmallRed.png";
   std::string noTomato = package_path + "/test/input_data/SmallBlue.png";
-  std::vector<std::string> noTomatos;
-  noTomatos.push_back(noTomato);
+  std::vector<std::string> tomatos;
+  tomatos.push_back(tomato);
+  
+  FoodPixelIdentifier food_identifier(tomatos, noTomato);
 
   // make a mask
   std::vector<cv::Point> image_filter_vertices;
@@ -49,10 +51,9 @@ TEST(TestSuite, test_mask)
   //cv::imshow( "Display window", mask * 255);     
   //cv::waitKey(0);
   
-  FoodPixelIdentifier food_identifier;
   cv::Point2d point;
   std::vector<cv::Point2d> points;
-  bool found = food_identifier.GetFoodPixelCenter(image, tomato, noTomatos, points, &mask);
+  std::vector<bool> found = food_identifier.GetFoodPixelCenter(image, points, &mask);
   //std::cout << "point" << point.x << "," << point.y << "\n";
 
   //cv::circle(image,point,10,cv::Scalar( 0, 0, 255 ));

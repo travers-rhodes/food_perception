@@ -17,7 +17,8 @@ class FoodTracker
     image_transport::ImageTransport it_;
     image_transport::CameraSubscriber sub_;
     tf::TransformListener tf_listener_;
-    ros::Publisher food_loc_pub_, poly_pub_;
+    ros::Publisher poly_pub_;
+    std::vector<ros::Publisher> food_loc_pubs_;
     std::shared_ptr<PixelProjector> pix_proj_;
     std::shared_ptr<FoodPixelIdentifier> pix_identifier_;
     std::string camera_frame_, plane_frame_, negative_img_filename_;
