@@ -49,7 +49,6 @@ bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel)
     } 
   }
 
-  std::cout << "max_area: " << max_area << ", largest_component: " << largest_component << "\n";   
   if (max_area < min_num_pixels)
   {
     // object still too small 
