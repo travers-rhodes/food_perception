@@ -6,10 +6,6 @@
 // return true if out parameter "pixel" is filled out
 bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel)
 {
-  cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  cv::imshow( "Display window", binary_image);     
-  cv::waitKey(0);
-
   // minimum number of pixels in order to count as a splotch
   int min_num_pixels = 20;
 
@@ -28,10 +24,6 @@ bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel)
                                      cv::Point2i( dilation_size, dilation_size ) );
   cv::dilate(binary_image, binary_image, element);
   
-  cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  cv::imshow( "Display window", binary_image);     
-  cv::waitKey(0);
-
   // only return the maximal-area connected element
   // https://stackoverflow.com/questions/29108270/opencv-2-4-10-bwlabel-connected-components/30265609#30265609
   cv::Mat labels, stats, centroids;
@@ -93,11 +85,6 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
          std::vector<cv::Point2i> &pixels, 
          cv::Mat *mask)
 {
-  //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  //cv::imshow( "Display window", image );     
-  //cv::waitKey(0);
-
-  
   // avoid the computational complexity of overly large images
   int scaled_size_x = 200, scaled_size_y = 200;
   int smaller_image_x, smaller_image_y;
@@ -171,9 +158,5 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
     success_vec.push_back(success);
     pixels.push_back(pixel);
   }
-  //cv::circle(binary_image_unscaled,pixel,10,cv::Scalar( 0, 0, 255 ));
-  //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  //cv::imshow( "Display window", binary_image_unscaled);     
-  //cv::waitKey(0);
   return(success_vec);
 }
