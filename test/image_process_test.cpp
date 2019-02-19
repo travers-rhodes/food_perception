@@ -8,23 +8,34 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
+#include <ros/ros.h>
+#include <ros/package.h>
+#include <vector>
 
 // Declare a test
 TEST(TestSuite, test_find_red)
 {
-  cv::Mat image;
-  image = cv::imread("/home/traversrhodes/demo_ws/src/food_perception/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
+  std::string package_path = ros::package::getPath("food_perception");
+  cv::Mat image = cv::imread(package_path + "/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
+  std::string tomato = package_path + "/test/input_data/SmallRed.png";
+  std::string noTomato = package_path + "/test/input_data/SmallBlue.png";
+  std::vector<std::string> noTomatos;
+  noTomatos.push_back(noTomato);
+  
   FoodPixelIdentifier food_identifier;
-  cv::Point2d point;
-  bool found = food_identifier.GetFoodPixelCenter(image, point);
+  std::vector<cv::Point2d> points;
+  bool found = food_identifier.GetFoodPixelCenter(image, tomato, noTomatos, points);
   //std::cout << "point" << point.x << "," << point.y << "\n";
 }
 
 TEST(TestSuite, test_mask)
 {
-  // load test image
-  cv::Mat image;
-  image = cv::imread("/home/traversrhodes/demo_ws/src/food_perception/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
+  std::string package_path = ros::package::getPath("food_perception");
+  cv::Mat image = cv::imread(package_path + "/test/input_data/MosaicView.jpg", CV_LOAD_IMAGE_COLOR);
+  std::string tomato = package_path + "/test/input_data/SmallRed.png";
+  std::string noTomato = package_path + "/test/input_data/SmallBlue.png";
+  std::vector<std::string> noTomatos;
+  noTomatos.push_back(noTomato);
 
   // make a mask
   std::vector<cv::Point> image_filter_vertices;
@@ -40,7 +51,8 @@ TEST(TestSuite, test_mask)
   
   FoodPixelIdentifier food_identifier;
   cv::Point2d point;
-  bool found = food_identifier.GetFoodPixelCenter(image, point, &mask);
+  std::vector<cv::Point2d> points;
+  bool found = food_identifier.GetFoodPixelCenter(image, tomato, noTomatos, points, &mask);
   //std::cout << "point" << point.x << "," << point.y << "\n";
 
   //cv::circle(image,point,10,cv::Scalar( 0, 0, 255 ));
@@ -49,6 +61,7 @@ TEST(TestSuite, test_mask)
   //cv::waitKey(0);
 
   //simple regression test:
+  point = points[0];
   EXPECT_EQ(489, point.x);
   EXPECT_EQ(383, point.y);
 }

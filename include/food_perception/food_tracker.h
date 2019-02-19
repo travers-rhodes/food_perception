@@ -20,12 +20,12 @@ class FoodTracker
     ros::Publisher food_loc_pub_, poly_pub_;
     std::shared_ptr<PixelProjector> pix_proj_;
     std::shared_ptr<FoodPixelIdentifier> pix_identifier_;
-    std::string camera_frame_;
-    std::string plane_frame_;
+    std::string camera_frame_, plane_frame_, negative_img_filename_;
+    std::vector<std::string> positive_img_filenames_;
     std::vector<geometry_msgs::Point> *table_polygon_of_interest_;
     bool active_ = false;
   public:
-    FoodTracker(std::string image_topic, std::string plane_frame, std::vector<geometry_msgs::Point> *table_polygon_of_interest = NULL);
+    FoodTracker(std::string image_topic, std::string plane_frame, std::vector<std::string> positive_img_filenames, std::string negative_img_filename, std::vector<geometry_msgs::Point> *table_polygon_of_interest = NULL);
     void StartTracking();
     void imageCb(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
 };

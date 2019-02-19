@@ -1,5 +1,19 @@
 #include "food_perception/param_parser.h"
 
+bool ParseFilenamesParam(std::string names_raw, std::vector<std::string> &names)
+{
+  //https://www.fluentcpp.com/2017/04/21/how-to-split-a-string-in-c/
+  boost::split(names, names_raw, [](char c){return c == ',';});
+  for (std::vector<std::string>::iterator itr = names.begin(); itr != names.end(); itr++)
+  {
+    if (itr->size() == 0)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 // params:
 // roi_polygon_raw_str: a string of the form '(x0, y0), (x1, y1), (x2, y2), ...' 
 // poly_of_interest: an out parameter that's filled with a vector of geometry_msgs::Point representation of the raw_str input

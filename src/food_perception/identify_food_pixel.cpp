@@ -1,9 +1,15 @@
 #include "food_perception/identify_food_pixel.h"
 #include <iostream>
-#include <ros/ros.h>
-#include <ros/package.h>
 
-bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &pixel, cv::Mat *mask)
+// given an input image and positive and negative examples of the food
+// and (optionally) a mask
+// fill in the pixels vector (out parameter) with all the centers of the food
+// that lie within the mask
+bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, 
+         std::string positive_img_filename,
+         std::vector<std::string> negative_img_filenames,
+         std::vector<cv::Point2d> &pixels, 
+         cv::Mat *mask)
 {
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
   //cv::imshow( "Display window", image );     
@@ -32,33 +38,48 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
     scaled_size_y = image.cols;
   }
 
-  std::string package_path = ros::package::getPath("food_perception");
-  cv::Mat tomato = cv::imread(package_path + "/test/input_data/SmallRed.png", CV_LOAD_IMAGE_COLOR);
-  cv::Mat noTomato = cv::imread(package_path + "/test/input_data/SmallBlue.png", CV_LOAD_IMAGE_COLOR);
+  cv::Mat positive = cv::imread(positive_img_filename, CV_LOAD_IMAGE_COLOR);
+  cv::Mat positive_vec = positive.reshape(3,positive.cols*positive.rows).reshape(1);
+
+  //http://answers.opencv.org/question/1368/concatenating-matrices/
+  cv::Mat negatives_vec;
+  for (std::vector<std::string>::iterator itr = negative_img_filenames.begin(); itr != negative_img_filenames.end(); itr++)
+  {
+    cv::Mat negative = cv::imread(*itr, CV_LOAD_IMAGE_COLOR);
+    cv::Mat negative_vec = negative.reshape(3,negative.cols*negative.rows).reshape(1);
+    if (itr == negative_img_filenames.begin())
+    {
+      negatives_vec = negative_vec;
+    }
+    else
+    {
+      // TODO: check that this code branch actually runs with multiple images
+      cv::hconcat(negative, negatives_vec, negatives_vec);
+    }
+  }
+
   //std::cout << image.cols << "," << image.rows << " I guess\n";
   //std::cout << scaledImage.cols << "," << scaledImage.rows << " I guess\n";
   //std::cout << tomato.cols << "," << tomato.rows << " I guess\n";
   //std::cout << noTomato.cols << "," << noTomato.rows << " I guess\n";
 
   cv::Mat image_vec = scaledImage.reshape(3,scaled_size_x * scaled_size_y).reshape(1);
-  cv::Mat tomato_vec = tomato.reshape(3,tomato.cols*tomato.rows).reshape(1);
-  cv::Mat noTomato_vec = noTomato.reshape(3,noTomato.cols*noTomato.rows).reshape(1);
 
   //std::cout << image_vec.cols << "," << image_vec.rows << " I guess\n";
   //std::cout << tomato_vec.cols << "," << tomato_vec.rows << " I guess\n";
   //std::cout << noTomato_vec.cols << "," << noTomato_vec.rows << " I guess\n";
 
-  cv::Mat dist_tomato, dist_noTomato; 
-  cv::batchDistance(image_vec, tomato_vec, dist_tomato, -1, cv::noArray());
-  cv::batchDistance(image_vec, noTomato_vec, dist_noTomato, -1, cv::noArray());
+  cv::Mat dist_positive, dist_negative; 
+  cv::batchDistance(image_vec, positive_vec, dist_positive, -1, cv::noArray());
+  cv::batchDistance(image_vec, negatives_vec, dist_negative, -1, cv::noArray());
 
-  cv::Mat min_dist_tomato, min_dist_noTomato;
-  cv::reduce(dist_tomato, min_dist_tomato, 1, cv::REDUCE_MIN);
-  cv::reduce(dist_noTomato, min_dist_noTomato, 1, cv::REDUCE_MIN);
+  cv::Mat min_dist_positive, min_dist_negative;
+  cv::reduce(dist_positive, min_dist_positive, 1, cv::REDUCE_MIN);
+  cv::reduce(dist_negative, min_dist_negative, 1, cv::REDUCE_MIN);
   
 
   cv::Mat binary_image;
-  cv::compare(min_dist_tomato, min_dist_noTomato, binary_image, cv::CMP_LE);
+  cv::compare(min_dist_positive, min_dist_negative, binary_image, cv::CMP_LE);
   binary_image = binary_image.reshape(1,scaled_size_x);
   
   cv::Mat binary_image_unscaled; 
@@ -86,8 +107,10 @@ bool FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, cv::Point2d &
     return false;
   }
   
+  cv::Point2d pixel;
   pixel.x = x_center;
   pixel.y = y_center;
+  pixels.push_back(pixel);
   //cv::circle(binary_image_unscaled,pixel,10,cv::Scalar( 0, 0, 255 ));
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
   //cv::imshow( "Display window", binary_image_unscaled);     

@@ -29,7 +29,7 @@ TEST(TestSuite, test_projection)
   EXPECT_FLOAT_EQ(0, result_point2.point.z);
 }
 
-TEST(TestSuite, test_param_parse)
+TEST(TestSuite, test_param_parse_poly)
 {
   std::vector<geometry_msgs::Point> poly;
   EXPECT_FALSE(ParsePolygonParam("", poly));
@@ -39,6 +39,16 @@ TEST(TestSuite, test_param_parse)
   EXPECT_FLOAT_EQ(poly[0].z, 0);
   EXPECT_FALSE(ParsePolygonParam("( 0 ,)", poly));
   EXPECT_FALSE(ParsePolygonParam("(  ,)", poly));
+}
+
+TEST(TestSuite, test_param_parse_filename)
+{
+  std::vector<std::string> names;
+  EXPECT_FALSE(ParseFilenamesParam("", names));
+  EXPECT_FALSE(ParseFilenamesParam("hello,", names));
+  EXPECT_TRUE(ParseFilenamesParam("hello a ,there", names));
+  EXPECT_STREQ(names[0].c_str(), "hello a ");
+  EXPECT_STREQ(names[1].c_str(), "there");
 }
 
 

@@ -4,7 +4,7 @@
 // * image_topic: the ros topic streaming camera images
 // * plane_frame: the table plane (z=0) we project food pixels onto
 // * table_polygon_of_interest: a vector of points defining a polygon of interest (ignore food outside this polygon). All points should have z = 0 (should lie on table).
-FoodTracker::FoodTracker(std::string image_topic, std::string plane_frame, std::vector<geometry_msgs::Point> *table_polygon_of_interest) : it_(nh_), plane_frame_(plane_frame), table_polygon_of_interest_(table_polygon_of_interest)
+FoodTracker::FoodTracker(std::string image_topic, std::string plane_frame, std::vector<std::string> positive_img_filenames, std::string negative_img_filename, std::vector<geometry_msgs::Point> *table_polygon_of_interest) : it_(nh_), plane_frame_(plane_frame), table_polygon_of_interest_(table_polygon_of_interest), positive_img_filenames_(positive_img_filenames), negative_img_filename_(negative_img_filename)
 {  
   ROS_WARN("[food_tracker] subscribing to camera");
   sub_ = it_.subscribeCamera(image_topic, 1, &FoodTracker::imageCb, this);
@@ -98,12 +98,18 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
     mask_pointer = &mask;
   }
 
-  cv::Point2d food_pixel;
-  if (!pix_identifier_->GetFoodPixelCenter(image, food_pixel, mask_pointer))
+  // TODO add logic to look for: one of possible positives, 
+  // and not look for: negative and other possible positives.
+  std::vector<cv::Point2d> food_pixels;
+  std::vector<std::string> negative_img_filenames;
+  negative_img_filenames.push_back(negative_img_filename_);
+  if (!pix_identifier_->GetFoodPixelCenter(image, positive_img_filenames_[0], negative_img_filenames, food_pixels, mask_pointer))
   {
     ROS_WARN("[food_tracker] No tomato seen");
     return;
   }
+  
+  cv::Point2d food_pixel = food_pixels[0];
 
  
   ROS_WARN("[food_tracker] Actually using tf");
