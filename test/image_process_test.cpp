@@ -23,9 +23,31 @@ TEST(TestSuite, test_find_red)
   tomatos.push_back(tomato);
   
   FoodPixelIdentifier food_identifier(tomatos, noTomato);
-  std::vector<cv::Point2d> points;
+  std::vector<cv::Point2i> points;
   std::vector<bool> found = food_identifier.GetFoodPixelCenter(image, points);
   //std::cout << "point" << point.x << "," << point.y << "\n";
+}
+
+
+// Test finding the center of the largest of several splotches 
+TEST(TestSuite, test_find_center)
+{
+  cv::Mat image = cv::Mat::zeros(100, 100, CV_8U);
+  cv::Point2i point1(30, 30), point2(70,70);
+  // negative line width means filled
+  cv::circle(image, point1, 10, cv::Scalar(1), -1);
+  cv::circle(image, point2, 6, cv::Scalar(1), -1);
+  
+  //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  //cv::imshow( "Display window", image * 255);     
+  //cv::waitKey(0);
+
+  cv::Point2i pixel;
+  ASSERT_TRUE(GetPixel(image, pixel));
+
+  //simple regression test:
+  EXPECT_EQ(30, pixel.x);
+  EXPECT_EQ(30, pixel.y);
 }
 
 TEST(TestSuite, test_mask)
@@ -40,29 +62,31 @@ TEST(TestSuite, test_mask)
   FoodPixelIdentifier food_identifier(tomatos, noTomato);
 
   // make a mask
-  std::vector<cv::Point> image_filter_vertices;
-  image_filter_vertices.push_back(cv::Point(image.cols/3,image.rows/3));
-  image_filter_vertices.push_back(cv::Point(image.cols/3,2 * image.rows/3));
-  image_filter_vertices.push_back(cv::Point(2*image.cols/3,2 * image.rows/3));
-  image_filter_vertices.push_back(cv::Point(2*image.cols/3,image.rows/3));
+  std::vector<cv::Point2i> image_filter_vertices;
+  image_filter_vertices.push_back(cv::Point2i(image.cols/3,image.rows/3));
+  image_filter_vertices.push_back(cv::Point2i(image.cols/3,2 * image.rows/3));
+  image_filter_vertices.push_back(cv::Point2i(2*image.cols/3,2 * image.rows/3));
+  image_filter_vertices.push_back(cv::Point2i(2*image.cols/3,image.rows/3));
   cv::Mat mask = cv::Mat::zeros(image.rows, image.cols, CV_8U);
   cv::fillConvexPoly(mask, image_filter_vertices.data(), image_filter_vertices.size(), cv::Scalar(1));
-  //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-  //cv::imshow( "Display window", mask * 255);     
-  //cv::waitKey(0);
-  
-  cv::Point2d point;
-  std::vector<cv::Point2d> points;
-  std::vector<bool> found = food_identifier.GetFoodPixelCenter(image, points, &mask);
-  //std::cout << "point" << point.x << "," << point.y << "\n";
 
-  //cv::circle(image,point,10,cv::Scalar( 0, 0, 255 ));
+  cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  cv::imshow( "Display window", mask * 255);     
+  //cv::imshow( "Display window", image);     
+  cv::waitKey(0);
+  
+  std::vector<cv::Point2i> points;
+  std::vector<bool> found = food_identifier.GetFoodPixelCenter(image, points, &mask);
+  ASSERT_TRUE(found[0]);
+  std::cout << "point" << points[0].x << "," << points[0].y << "\n";
+
+  //cv::circle(image,points[0],10,cv::Scalar( 0, 0, 255 ));
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
   //cv::imshow( "Display window", image);     
   //cv::waitKey(0);
 
   //simple regression test:
-  point = points[0];
+  cv::Point2i point = points[0];
   EXPECT_EQ(489, point.x);
   EXPECT_EQ(383, point.y);
 }

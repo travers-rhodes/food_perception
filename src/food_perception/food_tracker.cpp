@@ -79,7 +79,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
     // fill out point header to make a template for a stamped point 
     stamped_vertex.header.stamp = image_msg->header.stamp;
     stamped_vertex.header.frame_id = plane_frame_;
-    std::vector<cv::Point> image_filter_vertices;
+    std::vector<cv::Point2i> image_filter_vertices;
     geometry_msgs::PolygonStamped polygon_msg; 
     polygon_msg.header.stamp = image_msg->header.stamp;
     polygon_msg.header.frame_id = plane_frame_;
@@ -93,7 +93,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
       vertex.z = stamped_vertex.point.z; 
       polygon_msg.polygon.points.push_back(vertex);
       // the following converts to integer, which I'm fine with
-      cv::Point image_filter_vertex = pix_proj_->PointStampedProjectedToPixel(stamped_vertex);
+      cv::Point2i image_filter_vertex = pix_proj_->PointStampedProjectedToPixel(stamped_vertex);
       image_filter_vertices.push_back(image_filter_vertex);
       // https://stackoverflow.com/questions/43443127/opencv-how-to-create-a-mask-in-the-shape-of-a-polygon
       cv::fillConvexPoly(mask, image_filter_vertices.data(), image_filter_vertices.size(), cv::Scalar(1));
@@ -104,7 +104,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
 
   // TODO add logic to look for: one of possible positives, 
   // and not look for: negative and other possible positives.
-  std::vector<cv::Point2d> food_pixels;
+  std::vector<cv::Point2i> food_pixels;
   std::vector<std::string> negative_img_filenames;
   negative_img_filenames.push_back(negative_img_filename_);
   std::vector<bool> success_vec = pix_identifier_->GetFoodPixelCenter(image, food_pixels, mask_pointer);
@@ -114,7 +114,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
     return;
   }
   
-  cv::Point2d food_pixel = food_pixels[0];
+  cv::Point2i food_pixel = food_pixels[0];
  
   ROS_WARN("[food_tracker] Actually using tf");
   geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);

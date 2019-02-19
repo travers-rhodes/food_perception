@@ -3,6 +3,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+// helper function (testable) to get the center pixel of a white splotch
+// in a binary image
+bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel);
+
 class FoodPixelIdentifier
 {
   private:
@@ -12,6 +16,6 @@ class FoodPixelIdentifier
     std::vector<cv::Mat> negative_vecs_;
   public:
     FoodPixelIdentifier(std::vector<std::string> positive_img_filenames, std::string negative_img_filename);
-    std::vector<bool> GetFoodPixelCenter(const cv::Mat &image, std::vector<cv::Point2d> &pixel, cv::Mat *mask = NULL);
+    std::vector<bool> GetFoodPixelCenter(const cv::Mat &image, std::vector<cv::Point2i> &pixel, cv::Mat *mask = NULL);
 };
 

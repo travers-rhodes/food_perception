@@ -1,6 +1,76 @@
 #include "food_perception/identify_food_pixel.h"
 #include <iostream>
 
+// this is allowed to modify binary_image
+// find the food pixel center in the binary image
+// return true if out parameter "pixel" is filled out
+bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel)
+{
+  cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  cv::imshow( "Display window", binary_image);     
+  cv::waitKey(0);
+
+  // minimum number of pixels in order to count as a splotch
+  int min_num_pixels = 20;
+
+  // https://docs.opencv.org/2.4/doc/tutorials/imgproc/erosion_dilatation/erosion_dilatation.html
+  // erode anything with a radius less than 10 pixels
+  int erosion_size = 2;
+  cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT,
+                                     cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+                                     cv::Point2i( erosion_size, erosion_size ) );
+  cv::erode(binary_image, binary_image, element);
+
+  // dilate to connect anything within 10 pixels (plus 10 pixels to undo the erode)
+  int dilation_size = 5;
+  element = cv::getStructuringElement( cv::MORPH_RECT,
+                                     cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),
+                                     cv::Point2i( dilation_size, dilation_size ) );
+  cv::dilate(binary_image, binary_image, element);
+  
+  cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  cv::imshow( "Display window", binary_image);     
+  cv::waitKey(0);
+
+  // only return the maximal-area connected element
+  // https://stackoverflow.com/questions/29108270/opencv-2-4-10-bwlabel-connected-components/30265609#30265609
+  cv::Mat labels, stats, centroids;
+  int nLabels = cv::connectedComponentsWithStats(binary_image, labels, stats, centroids);
+  
+  if (nLabels <= 1)
+  {
+    // no object detected
+    return false;
+  }
+
+  // index 0 is background
+  // but it's still counted as part of nLabels...
+  int largest_component = 1;
+  int max_area = stats.at<int>(1, cv::CC_STAT_AREA);
+  for (int i = 1; i < nLabels; i++)
+  {
+    int comp_area = stats.at<int>(i, cv::CC_STAT_AREA);
+    if (comp_area > max_area)
+    {
+      max_area = comp_area;
+      largest_component = i;
+    } 
+  }
+
+  std::cout << "max_area: " << max_area << ", largest_component: " << largest_component << "\n";   
+  if (max_area < min_num_pixels)
+  {
+    // object still too small 
+    return false;
+  }
+  
+  
+  int x_center = centroids.at<double>(largest_component, 0);
+  int y_center = centroids.at<double>(largest_component, 1);
+  pixel.x = x_center;
+  pixel.y = y_center;
+  return true;
+} 
 
 FoodPixelIdentifier::FoodPixelIdentifier(std::vector<std::string> positive_img_filenames, std::string negative_img_filename)
 {
@@ -20,15 +90,13 @@ FoodPixelIdentifier::FoodPixelIdentifier(std::vector<std::string> positive_img_f
 // fill in the pixels vector (out parameter) with all the centers of the food
 // that lie within the mask
 std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image, 
-         std::vector<cv::Point2d> &pixels, 
+         std::vector<cv::Point2i> &pixels, 
          cv::Mat *mask)
 {
   //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
   //cv::imshow( "Display window", image );     
   //cv::waitKey(0);
 
-  // minimum number of pixels in order to count as a tomato
-  int min_num_pixels = 200;
   
   // avoid the computational complexity of overly large images
   int scaled_size_x = 200, scaled_size_y = 200;
@@ -87,35 +155,20 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
     
     cv::Mat binary_image_unscaled; 
     if (resized) {
-      cv::resize(binary_image, binary_image_unscaled, cv::Size(image.cols,image.rows),0,0);
+      // http://answers.opencv.org/question/68507/cvresize-incorrect-interpolation-with-inter_nearest/ 
+      cv::resize(binary_image, binary_image_unscaled, cv::Size(image.cols,image.rows),0,0, cv::INTER_NEAREST);
     } else {
       binary_image_unscaled = binary_image;
     }
 
     // apply the mask to the binary "relevant pixels" image 
-    if (mask)
-    {
+    if (mask) {
       binary_image_unscaled = mask->mul(binary_image_unscaled);
     }
 
-    
-    cv::Moments moments = cv::moments(binary_image_unscaled, true);
-    int x_center = moments.m10/moments.m00;
-    int y_center = moments.m01/moments.m00;
-    //std::cout << "x_center: " << x_center << "; y_center: " << y_center << "; count: " << moments.m00 << "\n";
-
-    cv::Point2d pixel;
-    if (moments.m00 < min_num_pixels)
-    {
-      // no object detected
-      success_vec.push_back(false);
-      pixels.push_back(pixel);
-      continue;
-    }
-    
-    success_vec.push_back(true);
-    pixel.x = x_center;
-    pixel.y = y_center;
+    cv::Point2i pixel;
+    bool success = GetPixel(binary_image_unscaled, pixel);
+    success_vec.push_back(success);
     pixels.push_back(pixel);
   }
   //cv::circle(binary_image_unscaled,pixel,10,cv::Scalar( 0, 0, 255 ));
