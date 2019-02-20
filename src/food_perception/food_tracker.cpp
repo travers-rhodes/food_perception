@@ -98,7 +98,7 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
       bool is_in_front_of_camera = pix_proj_->PointStampedProjectedToPixel(stamped_vertex, image_filter_vertex);
       if (!is_in_front_of_camera)
       {
-        ROS_WARN("Ignoring this image, because at least one point of polygon is behind camera");
+        //ROS_WARN("Ignoring this image, because at least one point of polygon is behind camera");
         return;
       }
       image_filter_vertices.push_back(image_filter_vertex);
@@ -123,11 +123,11 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
   {
     if (!success_vec[i])
     {
-      ROS_WARN("[food_tracker] food %d not seen", i);
+      //ROS_WARN("[food_tracker] food %d not seen", i);
       continue;
     }
     
-    ROS_WARN("[food_tracker] publishing food %d", i);
+    //ROS_WARN("[food_tracker] publishing food %d", i);
     cv::Point2i food_pixel = food_pixels[i];
     geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);
     food_loc_pubs_[i].publish(food_loc_msg);
