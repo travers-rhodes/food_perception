@@ -16,6 +16,7 @@ class FoodTracker
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::CameraSubscriber sub_;
+    image_transport::Publisher mask_pub_;
     tf::TransformListener tf_listener_;
     ros::Publisher poly_pub_;
     std::vector<ros::Publisher> food_loc_pubs_;

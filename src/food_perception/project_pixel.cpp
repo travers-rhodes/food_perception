@@ -79,7 +79,8 @@ geometry_msgs::PointStamped PixelProjector::PixelProjectedOnXYPlane(const cv::Po
   return stamped_point;
 }
 
-cv::Point2d PixelProjector::PointStampedProjectedToPixel(const geometry_msgs::PointStamped point)
+// return false if the point is behind the camera (don't transform/publish if camera is pointing away from table
+bool PixelProjector::PointStampedProjectedToPixel(const geometry_msgs::PointStamped point, cv::Point2i &pixel)
 {
   geometry_msgs::PointStamped camera_frame_point;
   ros::Duration timeout(1.0 / 10);
@@ -92,7 +93,15 @@ cv::Point2d PixelProjector::PointStampedProjectedToPixel(const geometry_msgs::Po
     throw;
   }
 
+  // don't try to project the point if it's behind the camera. If any point is behind the camera, ignore this frame.
+  if(camera_frame_point.point.z < 0)
+  {
+    return false;
+  } 
   cv::Point3d cv_point3d(camera_frame_point.point.x, camera_frame_point.point.y, camera_frame_point.point.z);
   cv::Point2d cv_point2d = cam_model_.project3dToPixel(cv_point3d);
-  return cv_point2d;
+  // the following converts to integer. But that's ok!
+  pixel.x = cv_point2d.x;
+  pixel.y = cv_point2d.y;
+  return true;
 }

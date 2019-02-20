@@ -16,6 +16,7 @@ FoodTracker::FoodTracker(std::string image_topic, std::string plane_frame, std::
   }
   ROS_WARN("[food_tracker] advertizing (debugging) polygon topic");
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("food_filter_polygon",1);
+  mask_pub_ = it_.advertise("mask",1);
 }
 
 void FoodTracker::StartTracking()
@@ -93,31 +94,43 @@ void FoodTracker::imageCb(const sensor_msgs::ImageConstPtr& image_msg,
       vertex.z = stamped_vertex.point.z; 
       polygon_msg.polygon.points.push_back(vertex);
       // the following converts to integer, which I'm fine with
-      cv::Point2i image_filter_vertex = pix_proj_->PointStampedProjectedToPixel(stamped_vertex);
+      cv::Point2i image_filter_vertex;
+      bool is_in_front_of_camera = pix_proj_->PointStampedProjectedToPixel(stamped_vertex, image_filter_vertex);
+      if (!is_in_front_of_camera)
+      {
+        ROS_WARN("Ignoring this image, because at least one point of polygon is behind camera");
+        return;
+      }
       image_filter_vertices.push_back(image_filter_vertex);
-      // https://stackoverflow.com/questions/43443127/opencv-how-to-create-a-mask-in-the-shape-of-a-polygon
-      cv::fillConvexPoly(mask, image_filter_vertices.data(), image_filter_vertices.size(), cv::Scalar(1));
     }
-    poly_pub_.publish(polygon_msg); 
+
+    // https://stackoverflow.com/questions/43443127/opencv-how-to-create-a-mask-in-the-shape-of-a-polygon
+    cv::fillConvexPoly(mask, image_filter_vertices.data(), image_filter_vertices.size(), cv::Scalar(1));
+
+    poly_pub_.publish(polygon_msg);
+    std_msgs::Header mask_head = image_msg->header;
+    sensor_msgs::ImagePtr msg = cv_bridge::CvImage(mask_head, "mono8", mask * 255).toImageMsg();
+    mask_pub_.publish(msg);
     mask_pointer = &mask;
   }
 
-  // TODO add logic to look for: one of possible positives, 
-  // and not look for: negative and other possible positives.
   std::vector<cv::Point2i> food_pixels;
   std::vector<std::string> negative_img_filenames;
   negative_img_filenames.push_back(negative_img_filename_);
   std::vector<bool> success_vec = pix_identifier_->GetFoodPixelCenter(image, food_pixels, mask_pointer);
-  if (!success_vec[0])
+
+  for (int i = 0; i < success_vec.size(); i++)
   {
-    ROS_WARN("[food_tracker] No tomato seen");
-    return;
+    if (!success_vec[i])
+    {
+      ROS_WARN("[food_tracker] food %d not seen", i);
+      continue;
+    }
+    
+    ROS_WARN("[food_tracker] publishing food %d", i);
+    cv::Point2i food_pixel = food_pixels[i];
+    geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);
+    food_loc_pubs_[i].publish(food_loc_msg);
   }
-  
-  cv::Point2i food_pixel = food_pixels[0];
- 
-  ROS_WARN("[food_tracker] Actually using tf");
-  geometry_msgs::PointStamped food_loc_msg = pix_proj_->PixelProjectedOnXYPlane(food_pixel, image_msg->header.stamp);
-  food_loc_pubs_[0].publish(food_loc_msg);
 }
 
