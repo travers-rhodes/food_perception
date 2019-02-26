@@ -63,13 +63,17 @@ bool GetPixel(cv::Mat &binary_image, cv::Point2i &pixel)
   return true;
 } 
 
-FoodPixelIdentifier::FoodPixelIdentifier(std::vector<std::string> positive_img_filenames, std::string negative_img_filename)
+FoodPixelIdentifier::FoodPixelIdentifier(std::vector<std::string> positive_img_filenames, std::string negative_img_filename) : it_(nh_)
 {
+  int i = 0;
   for (std::vector<std::string>::iterator itr = positive_img_filenames.begin(); itr != positive_img_filenames.end(); itr++)
   { 
     cv::Mat positive = cv::imread(*itr, CV_LOAD_IMAGE_COLOR);
     cv::Mat positive_vec = positive.reshape(3,positive.cols*positive.rows).reshape(1);
     positive_vecs_.push_back(positive_vec);
+    image_transport::Publisher raw_pixels_pub_ = it_.advertise("raw_food_mask" + std::to_string(i),1);
+    raw_pixels_pubs_.push_back(raw_pixels_pub_);
+    i++;
   }
   cv::Mat negative = cv::imread(negative_img_filename, CV_LOAD_IMAGE_COLOR);
   cv::Mat negative_vec = negative.reshape(3,negative.cols*negative.rows).reshape(1);
@@ -132,6 +136,7 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
   }
     
   std::vector<bool> success_vec;
+  int i = 0;
   // Generate binary image, find food point, and save it off for each type of food
   for (std::vector<cv::Mat>::iterator itr = min_dist_positives.begin(); itr != min_dist_positives.end(); itr++)
   {
@@ -151,6 +156,12 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
     if (mask) {
       binary_image_unscaled = mask->mul(binary_image_unscaled);
     }
+
+    // for debugging, publish the image pixels to a ros topic
+    std_msgs::Header head; 
+    sensor_msgs::ImagePtr msg = cv_bridge::CvImage(head, "mono8", binary_image_unscaled* 255).toImageMsg();
+    raw_pixels_pubs_[i].publish(msg); 
+    i++;
 
     cv::Point2i pixel;
     bool success = GetPixel(binary_image_unscaled, pixel);
