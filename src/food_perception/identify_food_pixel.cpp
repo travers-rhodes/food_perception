@@ -73,6 +73,8 @@ FoodPixelIdentifier::FoodPixelIdentifier(std::vector<std::string> positive_img_f
     positive_vecs_.push_back(positive_vec);
     image_transport::Publisher raw_pixels_pub_ = it_.advertise("raw_food_mask" + std::to_string(i),1);
     raw_pixels_pubs_.push_back(raw_pixels_pub_);
+    image_transport::Publisher dilate_pixels_pub_ = it_.advertise("dilate_food_mask" + std::to_string(i),1);
+    dilate_pixels_pubs_.push_back(dilate_pixels_pub_);
     i++;
   }
   cv::Mat negative = cv::imread(negative_img_filename, CV_LOAD_IMAGE_COLOR);
@@ -161,10 +163,14 @@ std::vector<bool> FoodPixelIdentifier::GetFoodPixelCenter(const cv::Mat &image,
     std_msgs::Header head; 
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(head, "mono8", binary_image_unscaled* 255).toImageMsg();
     raw_pixels_pubs_[i].publish(msg); 
-    i++;
 
     cv::Point2i pixel;
     bool success = GetPixel(binary_image_unscaled, pixel);
+    
+    msg = cv_bridge::CvImage(head, "mono8", binary_image_unscaled* 255).toImageMsg();
+    dilate_pixels_pubs_[i].publish(msg); 
+
+    i++;
     success_vec.push_back(success);
     pixels.push_back(pixel);
   }

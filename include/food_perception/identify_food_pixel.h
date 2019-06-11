@@ -23,6 +23,8 @@ class FoodPixelIdentifier
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     std::vector<image_transport::Publisher> raw_pixels_pubs_;
+    // the relevant pixels of the food after erosion/dilation
+    std::vector<image_transport::Publisher> dilate_pixels_pubs_;
   public:
     FoodPixelIdentifier(std::vector<std::string> positive_img_filenames, std::string negative_img_filename);
     std::vector<bool> GetFoodPixelCenter(const cv::Mat &image, std::vector<cv::Point2i> &pixel, cv::Mat *mask = NULL);
